@@ -12,9 +12,8 @@ jobs:
   # Tâche de construction de l'image Docker
   build:
     # Utiliser la dernière version d'Ubuntu
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
-    # Étapes à exécuter
     steps:
       # Récupérer le code du dépôt
       - name: Checkout code
@@ -34,3 +33,23 @@ jobs:
       # Pousser l'image vers Docker Hub
       - name: Push image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/devops-static-website:latest
+
+  # Tâche de scan de sécurité avec Trivy
+  trivy:
+    runs-on: self-hosted
+    needs: build  # S'exécute après le job build
+
+    steps:
+      # Récupérer le code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Scanner l'image avec Trivy
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKER_USERNAME }}/devops-static-website:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
